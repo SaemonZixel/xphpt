@@ -1,6 +1,8 @@
 # xphpt
 eXtensible PHP Templates - template engine like XSL-T, but with BEM philosophy like XJST or BH
 
+Stable version: [0.5.1](https://raw.githubusercontent.com/SaemonZixel/xphpt/master/xphpt.php)
+
 ## Template example
 
 Contents of `404notfound.phpt` file:
@@ -27,7 +29,7 @@ return array(
 		array(
 			'block' => 'body'
 			'tag' => 'body',
-				'contents' => array(
+			'contents' => array(
 					array('block' => 'content', 'html' => '<h1>Page not found!</h1><p>Sorry...</p>')
 				)
 			)

@@ -46,12 +46,12 @@ array(1) {
           string(19) "$block == 'phpinfo'"
         }
         ["php_code"]=>
-        string(27) "
+        string(33) "/* 
 
 
 
 
- ?><?php
+ */ ?><?php
 phpinfo();
 ?>"
       }
@@ -77,14 +77,14 @@ array(1) {
           string(19) "$block == 'phpinfo'"
         }
         ["php_code"]=>
-        string(31) "
+        string(37) "/* 
 
 
 
 
 
 
- ?><?php
+ */ ?><?php
 
 phpinfo();
 

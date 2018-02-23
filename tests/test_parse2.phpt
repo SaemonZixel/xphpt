@@ -45,14 +45,14 @@ array(1) {
           string(13) "empty($block)"
         }
         ["php_code"]=>
-        string(56) "
+        string(62) "/* 
 
 
 
 
 
 
- ?><?php
+ */ ?><?php
 
 return array('block' => 'test_ok');
 
@@ -70,7 +70,7 @@ return array('block' => 'test_ok');
           string(18) "$block == 'abc123'"
         }
         ["php_code"]=>
-        string(63) "
+        string(69) "/* 
 
 
 
@@ -85,7 +85,7 @@ return array('block' => 'test_ok');
 
 
 
- ?><?php
+ */ ?><?php
 
 return array('block' => 'abc123');
 
