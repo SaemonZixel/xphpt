@@ -3,7 +3,7 @@
 /**
  *  XPHPT - eXtansable PHP Templates
  *  
- *  @version	0.5.1
+ *  @version	0.5.2
  *  @author   Saemon Zixel <saemonzixel@gmail.com>
  *  @link     https://github.com/SaemonZixel/xphpt
  *
@@ -96,7 +96,7 @@ function xphpt_parse_phpt_file(&$ctx, $file) {
 				continue;
 			}
 			
-			$tpl_suffix = substr(trim(array_shift($sec_match), '-'), 6);
+			$tpl_suffix = substr(trim(array_shift($sec_match), '-'), 7);
 			
 			if(!isset($ctx['_parsed_templates'][count($sec_match)]))
 				$ctx['_parsed_templates'][count($sec_match)] = array();
@@ -200,8 +200,11 @@ case 'bem': case 'only_content':
 	break;
 }",
 		"\$_expr_cache =& \$ctx['_expr_cache'];",
+isset($GLOBALS['xphpt_debug']) ? 'var_dump("MATCH: block = ".$block.", elem = ".$elem.", ".implode(", ", array_keys((array)$xphpt_current)).", ".implode(", ", array_keys((array)$_args))."...");' : '',
  		"switch(isset(\$ctx['_matched_tpl_id']) ? \$ctx['_matched_tpl_id'] : 1) {"
 		);
+	
+		
 	foreach($ctx['_parsed_templates'] as $level => $tpls) {
 		$match_code[] = "\n/* ----- Priority $level ----- */";
 		foreach($tpls as $tpl_num => $tpl_rec) {
@@ -258,7 +261,7 @@ case 'bem': case 'only_content':
 	$ctx['_compiled_match'] = create_function('$xphpt_current, $mode, $_args, $ctx, $xphpt_key, $xphpt_position', implode("\n", $match_code));
 	
 	// для отладочных целей
-	$GLOBALS['xphpt_last_compiled_match_code'] = implode("\n", $match_code);
+	$GLOBALS['xphpt_last_compiled_match_code'] = $match_code;
 }
 
 function xphpt_parse_templates(&$ctx) {
@@ -358,12 +361,13 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 	global $xphpt_current_ctx, $xphpt_default_ctx;
  	global $xphpt_current /*, $xphpt_root, $xphpt_parents, $xphpt_key */;
 
-	if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': $val = '.(is_array($val)?(substr(json_encode($val),0,100).'...'):$val).', $key = '.$key);
+	if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.'(call): $val = '.(is_array($val)?(substr(json_encode($val),0,100).'...'):$val).', $key = '.$key);
 	
 	if(isset($GLOBALS['xphpt_debug_apply_call_limit'])) {
 		if(empty($GLOBALS['xphpt_debug_apply_call_limit'])) {
-			debug_print_backtrace();
-			return $result;
+			trigger_error('$GLOBALS[\'xphpt_debug_apply_call_limit\'] reached! return NULL as result.', E_USER_NOTICE);
+// 			debug_print_backtrace();
+			return null;
 		}
 		else $GLOBALS['xphpt_debug_apply_call_limit']--;
 	}
@@ -387,7 +391,12 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 
 	$xphpt_current = $val; // пригодится для apply('mode')
 
+	// строки не надо обрабатывать, они сразу идут в конечный результат
+	if(is_string($val)) return $val;
+	
+	// абрабатываем только структуры далее
 	assert('is_array($val);') or debug_print_backtrace(); // проверочка на всякий случай
+	assert('isset($newctx["_compiled_match"]) and is_callable($newctx["_compiled_match"]);', 'Context not initialized?');
 	
 	// запустим MATCH
 	$tpl_rec = call_user_func($newctx['_compiled_match'], $val, $mode, $args, $newctx, $key, $position);
@@ -399,7 +408,7 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 
 		// покажем строку вызвавшую ошибку
 		if(!empty($GLOBALS['xphpt_last_compiled_match_code'])) {
-			$lines = explode("\n", $GLOBALS['xphpt_last_compiled_match_code']);
+			$lines = $GLOBALS['xphpt_last_compiled_match_code'];
 			trigger_error("Error line #{$error['line']}: ".$lines[$error['line']-1], E_USER_NOTICE);
 		}
 		
@@ -408,14 +417,24 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 			error_clear_last();
  	}
 
-	if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': $tpl_rec = '.(is_array($tpl_rec)?"{$tpl_rec['file']}#{$tpl_rec['tpl_suffix']}":$tpl_rec));
+	if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.'(match-result): $tpl_rec = '.(is_array($tpl_rec)?"{$tpl_rec['file']}#{$tpl_rec['tpl_suffix']}":$tpl_rec));
 	
 	// нашли подходящий шаблон
 	if($tpl_rec) {
 		if(!empty($tpl_rec['php_file']))
 			$result = xphpt_apply_include($tpl_rec['php_file'], $val, $mode, $args, $newctx, $key, $position);
-		else
-			$result = xphpt_apply_eval(trim($tpl_rec['php_code']), $val, $mode, $args, $newctx, $key, $position);
+		else {
+			$result = xphpt_apply_eval($tpl_rec['php_code'], $val, $mode, $args, $newctx, $key, $position);
+			
+			// на случай ошибки в шаблоне
+			if(($error = error_get_last())
+			&& strpos($error['file'], '/xphpt.php') and strpos($error['file'], 'eval()\'d code')) {
+				$lines = explode("\n", $tpl_rec['php_code']);
+				trigger_error("Error line in {$tpl_rec['file']}".(empty($tpl_rec['tpl_suffix'])?'':"#{$tpl_rec['tpl_suffix']}")."({$error['line']}): ".$lines[$error['line']-1], E_USER_NOTICE);
+			}
+		}
+		
+		if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.'(template-result): $val = '.(is_array($result)?(substr(json_encode($result),0,100).'...'):$result));
 		
 		if(is_array($result))
 			$result = xphpt_apply($result, $mode, $args, $newctx, $key, $position);
@@ -435,7 +454,7 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 				$result['content'] = (array) $result['content'];
 				
 			foreach($result['content'] as $index => $bem_item) {
-				$result['content'][$index] = xphpt_apply($bem_item, $mode, $args, null, isset($val['block']) ? $val['block'] : $index, $index);
+				$result['content'][$index] = xphpt_apply($bem_item, $mode, $args, null, isset($val['block']) ? $val['block'] : null, $index);
 			}
 			break;
 		case 'only_arrays':
@@ -465,7 +484,7 @@ function xphpt_apply($val = array(), $mode = '', $args = null, $newctx = null, $
 
 // функция для внутреннего использования!
 function xphpt_apply_include($xphpt_include_file, $xphpt_current, $mode, $_args, $ctx, $xphpt_key, $xphpt_position) {
-	if(!empty($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': xphpt_include_file = '.$xphpt_include_file);
+	if(!empty($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.'(include): xphpt_include_file = '.$xphpt_include_file);
 	
 	// распаковываем окружение
 	extract($xphpt_current); isset($_args) and extract($_args);
@@ -483,7 +502,7 @@ function xphpt_apply_include($xphpt_include_file, $xphpt_current, $mode, $_args,
 
 // функция для внутреннего использования!
 function xphpt_apply_eval($xphpt_php_code, $xphpt_current, $mode, $_args, $ctx, $xphpt_key, $xphpt_position) {
-	if(!empty($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': xphpt_php_code = '.$xphpt_php_code);
+	if(!empty($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.'(evalute): xphpt_php_code = '.$xphpt_php_code);
 	
 	// распаковываем окружение
 	extract($xphpt_current); isset($_args) and extract($_args);
@@ -590,14 +609,23 @@ if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': $bem_array('.gettype
 	
 	if(is_array($bem_array)) {
 	
-		$before_html = isset($bem_array['before_html']) ? $bem_array['before_html'] : '';
-		$after_html = isset($bem_array['after_html']) ? $bem_array['after_html'] : '';
+		// если кто-то забыл или путает
+		$before_html = isset($bem_array['before_html']) 
+			? $bem_array['before_html'] 
+			: (isset($bem_array['html_before']) 
+			? $bem_array['html_before']
+			: '');
+		$after_html = isset($bem_array['after_html']) 
+			? $bem_array['after_html'] 
+			: (isset($bem_array['html_after']) 
+			? $bem_array['html_after']
+			: '');
 	
 		if(isset($bem_array['html'])) 
 			return $before_html.$bem_array['html'].$after_html;
 	
 		// если это список bem-элементов 
-		if(!key_exists('block', $bem_array) and !key_exists('elem', $bem_array)) {
+		if(!key_exists('block', $bem_array) and !key_exists('elem', $bem_array) and !key_exists('tag', $bem_array)) {
 			$result = array($before_html);
 			foreach($bem_array as $bem_item)
 				$result[] = toHtml($bem_item, isset($bem_array['block']) ? $bem_array['block'] : $block_name);
@@ -616,6 +644,11 @@ if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': $bem_array('.gettype
 			$delimElem = isset($xphpt_current_ctx['delimElem']) ? $xphpt_current_ctx['delimElem'] : $xphpt_default_ctx['delimElem'];
 			
 			$cls .= $delimElem.$bem_array['elem'];
+		}
+		
+		// Если не указаны не block не elem, значит это голый тег
+		elseif(!isset($bem_array['block']) and !isset($bem_array['elem'])) {
+			$cls = '';
 		}
 		
 		// Class
@@ -639,9 +672,13 @@ if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': $bem_array('.gettype
 	
 		// если укороченный тег (br, img, link...) то закрываем его сразу
 		$shortTags = isset($xphpt_current_ctx['shortTags']) ? $xphpt_current_ctx['shortTags'] : $xphpt_default_ctx['shortTags'];
-		if(($p = stripos($shortTags, $tag)) != false 
+		if(empty($bem_array['content'])
+		&& ($p = stripos($shortTags, $tag)) != false 
+		&& ($p === 0 or $shortTags[$p-1] == ' ')
 		&& in_array(substr($shortTags, $p+strlen($tag), 1), array(false, ' '))) {
-if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': ShortTag = '.$tag);
+		
+			if(isset($GLOBALS['xphpt_debug'])) var_dump(__FUNCTION__.': ShortTag = '.$tag);
+			
 			// в режиме генерации XHTML надо его закрыть
 			if(isset($xphpt_current_ctx['xhtml']) ? $xphpt_current_ctx['xhtml'] : $xphpt_default_ctx['xhtml'])
 				return "$before_html<$tag".(empty($cls)?'':" class=\"$cls\"").(empty($attrs)?'':$attrs)."/>$after_html";

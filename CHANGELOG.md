@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2
+- Bugfixes in xphpt_apply(), toHtml()
+- Improved error messages
+- BEM: 'tag' only mode
+- Added tests: test_tag_only1.phpt
+
 ## 0.5.1
 - Bugfixes in toHtml()
 - Added before_html and after_html fields in bem_array
