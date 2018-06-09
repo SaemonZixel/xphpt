@@ -38,21 +38,21 @@ array(1) {
         ["file"]=>
         string(16) "test_parse2.phpt"
         ["tpl_suffix"]=>
-        bool(false)
+        string(0) ""
         ["match"]=>
         array(1) {
           [0]=>
           string(13) "empty($block)"
         }
         ["php_code"]=>
-        string(62) "/* 
+        string(85) "/* 
 
 
 
 
 
 
- */ ?><?php
+ */ global $xphpt_current; ?><?php
 
 return array('block' => 'test_ok');
 
@@ -70,7 +70,7 @@ return array('block' => 'test_ok');
           string(18) "$block == 'abc123'"
         }
         ["php_code"]=>
-        string(69) "/* 
+        string(92) "/* 
 
 
 
@@ -85,7 +85,7 @@ return array('block' => 'test_ok');
 
 
 
- */ ?><?php
+ */ global $xphpt_current; ?><?php
 
 return array('block' => 'abc123');
 

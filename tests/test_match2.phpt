@@ -40,14 +40,21 @@
 '' . "\0" . 'lambda_1'
 <?php
 extract($xphpt_current); isset($_args) and extract($_args);
-global $xphpt_default_ctx;
+global $xphpt_default_ctx, $xphpt_current_bem_block;
 switch(empty($ctx['apply_traversal_mode']) ? $xphpt_default_ctx['apply_traversal_mode'] : $ctx['apply_traversal_mode']) {
 case 'bem': case 'only_content':
-	if(!isset($block)) $block = $xphpt_key;
-	if(!isset($elem)) $elem = '';
+	if(!isset($block) and !isset($elem)) $block = $elem = null;
+	elseif(!isset($block) and isset($elem)) $block = $xphpt_current_bem_block;
+	elseif(!isset($elem)) $elem = null;
+	$block_elem = "$block $elem";
 	break;
+default: 
+	isset($block) or $block = null;
+	isset($elem) or $elem = null;
+	$block_elem = null;
 }
 $_expr_cache =& $ctx['_expr_cache'];
+
 switch(isset($ctx['_matched_tpl_id']) ? $ctx['_matched_tpl_id'] : 1) {
 
 /* ----- Priority 8 ----- */

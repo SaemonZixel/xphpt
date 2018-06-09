@@ -39,19 +39,19 @@ array(1) {
         ["file"]=>
         string(12) "phpinfo.phpt"
         ["tpl_suffix"]=>
-        bool(false)
+        string(0) ""
         ["match"]=>
         array(1) {
           [0]=>
           string(19) "$block == 'phpinfo'"
         }
         ["php_code"]=>
-        string(33) "/* 
+        string(56) "/* 
 
 
 
 
- */ ?><?php
+ */ global $xphpt_current; ?><?php
 phpinfo();
 ?>"
       }
@@ -70,21 +70,21 @@ array(1) {
         ["file"]=>
         string(16) "test_parse1.phpt"
         ["tpl_suffix"]=>
-        bool(false)
+        string(0) ""
         ["match"]=>
         array(1) {
           [0]=>
           string(19) "$block == 'phpinfo'"
         }
         ["php_code"]=>
-        string(37) "/* 
+        string(60) "/* 
 
 
 
 
 
 
- */ ?><?php
+ */ global $xphpt_current; ?><?php
 
 phpinfo();
 

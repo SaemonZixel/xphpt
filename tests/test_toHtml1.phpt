@@ -20,7 +20,7 @@
 			)
 		)
 	);
-	
+// $GLOBALS['xphpt_debug'] = 1;
 	echo "\n------------------\n";
 	print_r(
 		toHtml(
@@ -34,8 +34,19 @@
 					array(
 						'elem' => 'item', 
 						'tag' => 'img',
-						'attrs' => array('class' => null, 'alt' => '', 'src' => 'about:blank'),
-						'content' => array('123'))
+						'attrs' => array('class' => null, 'alt' => '', 'src' => 'about:blank')
+						),
+					array(
+						'elem' => 'item2',
+						'content' => array(
+							array(
+								'attrs' => array('id'=>'id1'),
+								'content' => array(
+									array('elem' => 'item-inner', 'content' => array('123'))
+								)
+							)
+						)
+					)
 				)
 			)
 		)
@@ -44,4 +55,4 @@
 --EXPECT--
 <div class="test"><div class="test__item">123</div></div>
 ------------------
-<!-- link --><a class="test" href="http://yandex.ru" target="_blank"><img alt="" src="about:blank"/></a><!-- /link -->
+<!-- link --><a class="test" href="http://yandex.ru" target="_blank"><img alt="" src="about:blank"/><div class="test__item2"><div id="id1"><div class="test__item-inner">123</div></div></div></a><!-- /link -->

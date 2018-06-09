@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6
+- Many bugfixes
+- now the $xphpt_current is available in the template
+- BEM: content(), $block_elem == 'block elem' in match section
+- Added tests: test_content.phpt, test_tpls_list2.phpt, test_common_use_*.phpt
+
 ## 0.5.2
 - Bugfixes in xphpt_apply(), toHtml()
 - Improved error messages
